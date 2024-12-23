@@ -10,8 +10,8 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// MongoDB connection (Railway will provide this)
-const MONGODB_URL = process.env.MONGODB_URL || 'mongodb://localhost:27017/authentication_app';
+// MongoDB connection
+const MONGODB_URL = process.env.MONGODB_URL;
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
 mongoose.connect(MONGODB_URL, {
