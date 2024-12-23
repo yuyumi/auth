@@ -1,0 +1,18 @@
+{
+  "name": "authentication-app",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "frontend": "yarn workspace frontend dev",
+    "backend": "yarn workspace backend dev",
+    "dev": "concurrently \"yarn frontend\" \"yarn backend\"",
+    "install:all": "yarn install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

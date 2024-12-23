@@ -1,17 +1,11 @@
 # Authentication System
 
-To start this application, `cd` into `\backend` and type 
+To start this application, `cd` into `\authentication-app` and type
 
 ```
-npm install
-node server.js
-```
+yarn install:all
 
-Then, in a new terminal window, `cd` into `\frontend` and type
-
-```
-npm install
-npm run dev
+yarn dev
 ```
 
 The application should be running on `http://localhost:5173/`
