@@ -2,19 +2,15 @@
   "name": "authentication-app",
   "version": "1.0.0",
   "private": true,
-  "workspaces": [
-    "frontend",
-    "backend"
-  ],
   "scripts": {
-    "frontend": "cd frontend && yarn dev",
-    "backend": "cd backend && yarn dev",
-    "dev": "concurrently \"yarn frontend\" \"yarn backend\"",
-    "build": "cd frontend && yarn build",
+    "frontend": "cd frontend && npm run dev",
+    "backend": "cd backend && npm run dev",
+    "dev": "concurrently \"npm run frontend\" \"npm run backend\"",
+    "build": "cd frontend && npm run build",
     "start": "cd backend && node server.js",
-    "install:all": "yarn install"
+    "postinstall": "cd frontend && npm install && cd ../backend && npm install"
   },
-  "devDependencies": {
+  "dependencies": {
     "concurrently": "^8.2.2"
   }
 }

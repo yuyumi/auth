@@ -97,7 +97,7 @@ app.post('/api/login', async (req, res) => {
         // Generate JWT
         const token = jwt.sign(
             { userId: user.userId },
-            'your_jwt_secret',
+            JWT_SECRET,
             { expiresIn: '24h' }
         );
 
@@ -107,7 +107,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// JWT Middleware
+// Middleware to verify JWT
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -154,20 +154,6 @@ app.get('/api/products', authenticateToken, async (req, res) => {
     }
 });
 
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../frontend/dist')));
-    
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
-    });
-}
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
-
 // Health check endpoint for Railway
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'healthy' });
@@ -180,4 +166,9 @@ app.use(express.static(path.join(__dirname, '../frontend/dist')));
 // match one above, send back React's index.html file.
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
