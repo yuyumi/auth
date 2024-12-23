@@ -8,15 +8,22 @@ const path = require('path');
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+// CORS configuration
+app.use(cors({
+    origin: '*', // During testing, allow all origins
+    methods: ['GET', 'POST'],
+    credentials: true
+}));
 
-// MongoDB connection
-const MONGODB_URL = process.env.MONGODB_URL;
+// MongoDB Atlas connection
+const MONGODB_URL = process.env.MONGODB_URL || 'mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/authentication_app?retryWrites=true&w=majority';
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
 mongoose.connect(MONGODB_URL, {
     useNewUrlParser: true,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
+    retryWrites: true,
+    w: 'majority'
 }).then(() => {
     console.log('Connected to MongoDB');
 }).catch((error) => {
@@ -169,6 +176,6 @@ app.get('*', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://localhost:${PORT}`);
 });
