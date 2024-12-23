@@ -9,7 +9,7 @@ const App = () => {
   const [message, setMessage] = useState('');
   const [userId, setUserId] = useState('');
 
-  const API_URL = 'https://auth-production-9ea4.up.railway.app/api';
+  const API_URL = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/api`;
 
   useEffect(() => {
     const token = localStorage.getItem('token');
