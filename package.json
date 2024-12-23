@@ -7,12 +7,14 @@
     "backend"
   ],
   "scripts": {
-    "frontend": "yarn workspace frontend dev",
-    "backend": "yarn workspace backend dev",
+    "frontend": "cd frontend && yarn dev",
+    "backend": "cd backend && yarn dev",
     "dev": "concurrently \"yarn frontend\" \"yarn backend\"",
+    "build": "cd frontend && yarn build",
+    "start": "cd backend && node server.js",
     "install:all": "yarn install"
   },
   "devDependencies": {
-    "concurrently": "^8.2.0"
+    "concurrently": "^8.2.2"
   }
 }

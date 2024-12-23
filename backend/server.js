@@ -10,8 +10,8 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-// MongoDB connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/authentication-app';
+// MongoDB connection (Railway will provide this)
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/authentication_app';
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
 mongoose.connect(MONGODB_URI, {
@@ -166,4 +166,18 @@ if (process.env.NODE_ENV === 'production') {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+});
+
+// Health check endpoint for Railway
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'healthy' });
+});
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
