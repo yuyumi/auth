@@ -14,9 +14,14 @@ services:
     healthCheckPath: /api/health
 
   - name: authentication-app-frontend
-    type: static
+    type: web
+    env: static
     buildCommand: cd authentication-app && cd frontend && yarn install && yarn build
     staticPublishPath: authenticiation-app/frontend/dist
     envVars:
       - key: VITE_API_URL
         value: https://auth-c222.onrender.com/api
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
