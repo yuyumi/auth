@@ -9,7 +9,7 @@ const App = () => {
   const [message, setMessage] = useState('');
   const [userId, setUserId] = useState('');
 
-  const API_URL = process.env.RAILWAY_STATIC_URL || 'http://localhost:3000/api';
+  const API_URL = `${process.env.RAILWAY_STATIC_URL}/api` || 'http://localhost:3000/api';
 
   useEffect(() => {
     const token = localStorage.getItem('token');
