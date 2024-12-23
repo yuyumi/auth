@@ -4,13 +4,24 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
 // MongoDB connection
-mongoose.connect('abcdabcd');
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/authentication-app';
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
+
+mongoose.connect(MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}).then(() => {
+    console.log('Connected to MongoDB');
+}).catch((error) => {
+    console.error('MongoDB connection error:', error);
+});
 
 // User Schema
 const userSchema = new mongoose.Schema({
@@ -96,7 +107,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// Middleware to verify JWT
+// JWT Middleware
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -105,7 +116,7 @@ const authenticateToken = (req, res, next) => {
         return res.status(401).json({ message: 'Authentication required' });
     }
 
-    jwt.verify(token, 'your_jwt_secret', (err, user) => {
+    jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) {
             return res.status(403).json({ message: 'Invalid token' });
         }
@@ -142,6 +153,15 @@ app.get('/api/products', authenticateToken, async (req, res) => {
         res.status(500).json({ message: 'Error fetching products', error: error.message });
     }
 });
+
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, '../frontend/dist')));
+    
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
+    });
+}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

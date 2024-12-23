@@ -1,0 +1,22 @@
+services:
+  - name: authentication-app-backend
+    type: web
+    env: node
+    buildCommand: cd backend && yarn install
+    startCommand: cd backend && node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+    healthCheckPath: /api/health
+
+  - name: authentication-app-frontend
+    type: static
+    buildCommand: cd frontend && yarn install && yarn build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://auth-c222.onrender.com/api
