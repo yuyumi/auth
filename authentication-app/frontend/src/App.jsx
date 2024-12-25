@@ -4,10 +4,12 @@ const App = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [accountType, setAccountType] = useState('user');
   const [productId, setProductId] = useState('');
   const [products, setProducts] = useState([]);
   const [message, setMessage] = useState('');
   const [userId, setUserId] = useState('');
+  const [userType, setUserType] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [transferUserId, setTransferUserId] = useState('');
   const [showTransferForm, setShowTransferForm] = useState(false);
@@ -19,8 +21,10 @@ const App = () => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const storedUserId = localStorage.getItem('userId');
+    const storedUserType = localStorage.getItem('accountType');
     if (token && storedUserId) {
       setUserId(storedUserId);
+      setUserType(storedUserType);
       fetchOwnedProducts();
     }
   }, []);
@@ -68,7 +72,11 @@ const App = () => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ 
+          email, 
+          password,
+          ...((!isLogin && accountType) && { accountType })
+        })
       });
       
       const data = await response.json();
@@ -77,7 +85,9 @@ const App = () => {
         if (isLogin) {
           localStorage.setItem('token', data.token);
           localStorage.setItem('userId', data.userId);
+          localStorage.setItem('accountType', data.accountType);
           setUserId(data.userId);
+          setUserType(data.accountType);
           fetchOwnedProducts();
         }
         setMessage(isLogin ? 'Logged in successfully' : 'Registered successfully');
@@ -150,7 +160,9 @@ const App = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('userId');
+    localStorage.removeItem('accountType');
     setUserId('');
+    setUserType('');
     setProducts([]);
     setSelectedProduct(null);
     setShowTransferForm(false);
@@ -193,6 +205,19 @@ const App = () => {
                   required
                 />
               </div>
+              {!isLogin && (
+                <div>
+                  <label className="block text-sm font-medium">Account Type</label>
+                  <select
+                    value={accountType}
+                    onChange={(e) => setAccountType(e.target.value)}
+                    className="mt-1 block w-full rounded-md border border-gray-300 p-2"
+                  >
+                    <option value="user">User</option>
+                    <option value="manufacturer">Manufacturer</option>
+                  </select>
+                </div>
+              )}
               <button
                 type="submit"
                 className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
@@ -210,29 +235,38 @@ const App = () => {
         ) : (
           <div>
             <div className="mb-6">
-              <h2 className="text-2xl font-bold mb-2">Your User ID</h2>
-              <p className="bg-gray-100 p-2 rounded">{userId}</p>
+              <h2 className="text-2xl font-bold mb-2">Account Information</h2>
+              <p className="bg-gray-100 p-2 rounded mb-2">
+                <strong>User ID:</strong> {userId}
+              </p>
+              <p className="bg-gray-100 p-2 rounded">
+                <strong>Account Type:</strong> {userType}
+              </p>
             </div>
             
-            <h2 className="text-2xl font-bold mb-4">Create New Product</h2>
-            <form onSubmit={handleAddProduct} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium">Product ID</label>
-                <input
-                  type="text"
-                  value={productId}
-                  onChange={(e) => setProductId(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
-              >
-                Create Product
-              </button>
-            </form>
+            {userType === 'manufacturer' && (
+              <>
+                <h2 className="text-2xl font-bold mb-4">Create New Product</h2>
+                <form onSubmit={handleAddProduct} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium">Product ID</label>
+                    <input
+                      type="text"
+                      value={productId}
+                      onChange={(e) => setProductId(e.target.value)}
+                      className="mt-1 block w-full rounded-md border border-gray-300 p-2"
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
+                  >
+                    Create Product
+                  </button>
+                </form>
+              </>
+            )}
             
             <div className="mt-8">
               <h2 className="text-2xl font-bold mb-4">Your Products</h2>

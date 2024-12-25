@@ -30,13 +30,41 @@ mongoose.connect(MONGODB_URL, {
     console.error('MongoDB connection error:', error);
 });
 
-// User Schema
+// Updated User Schema
 const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     userId: { type: String, unique: true },
+    accountType: { 
+        type: String, 
+        enum: ['manufacturer', 'user'],
+        required: true,
+        default: 'user'
+    },
     createdAt: { type: Date, default: Date.now }
 });
+
+// Middleware to check if user is a manufacturer
+const checkManufacturer = async (req, res, next) => {
+    try {
+        const user = await User.findOne({ userId: req.user.userId });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (user.accountType !== 'manufacturer') {
+            return res.status(403).json({ 
+                message: 'Only manufacturer accounts can perform this action' 
+            });
+        }
+        next();
+    } catch (error) {
+        res.status(500).json({ 
+            message: 'Error checking user permissions', 
+            error: error.message 
+        });
+    }
+};
 
 // Product Schema
 const productSchema = new mongoose.Schema({
@@ -94,64 +122,83 @@ function generateId(prefix) {
     return `${prefix}_${crypto.randomBytes(16).toString('hex')}`;
 }
 
-// Register user
+// Modified register endpoint
 app.post('/api/register', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, accountType = 'user' } = req.body;
         
+        // Validate account type
+        if (!['manufacturer', 'user'].includes(accountType)) {
+            return res.status(400).json({ 
+                message: 'Invalid account type' 
+            });
+        }
+
         // Check if user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        // Hash password
+        // Hash password and create user
         const hashedPassword = await bcrypt.hash(password, 10);
-        
-        // Generate unique user ID
         const userId = generateUserId();
 
-        // Create new user
         const user = new User({
             email,
             password: hashedPassword,
-            userId
+            userId,
+            accountType
         });
 
         await user.save();
-        res.status(201).json({ message: 'User created successfully', userId });
+        res.status(201).json({ 
+            message: 'User created successfully', 
+            userId,
+            accountType 
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Error creating user', error: error.message });
+        res.status(500).json({ 
+            message: 'Error creating user', 
+            error: error.message 
+        });
     }
 });
 
-// Login user
+// Modified login endpoint to include account type
 app.post('/api/login', async (req, res) => {
     try {
         const { email, password } = req.body;
         
-        // Find user
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        // Check password
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        // Generate JWT
         const token = jwt.sign(
-            { userId: user.userId },
+            { 
+                userId: user.userId,
+                accountType: user.accountType 
+            },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
 
-        res.json({ token, userId: user.userId });
+        res.json({ 
+            token, 
+            userId: user.userId,
+            accountType: user.accountType
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Error logging in', error: error.message });
+        res.status(500).json({ 
+            message: 'Error logging in', 
+            error: error.message 
+        });
     }
 });
 
@@ -173,30 +220,26 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-// Create new product
-app.post('/api/products', authenticateToken, async (req, res) => {
+// Modified create product endpoint to require manufacturer account
+app.post('/api/products', authenticateToken, checkManufacturer, async (req, res) => {
     try {
         const { productId } = req.body;
         const ownerId = req.user.userId;
 
-        // Generate a unique item ID
         const itemId = generateId('item');
         
-        // Create the product
         const product = new Product({
             itemId,
             productId
         });
 
-        // Create initial transaction (minting)
         const transaction = new Transaction({
             transactionId: generateId('txn'),
             itemId,
             ownerId,
-            previousOwnerId: null  // Initial creation has no previous owner
+            previousOwnerId: null
         });
 
-        // Save both documents
         await product.save();
         await transaction.save();
 
