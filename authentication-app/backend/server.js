@@ -40,17 +40,58 @@ const userSchema = new mongoose.Schema({
 
 // Product Schema
 const productSchema = new mongoose.Schema({
-    productId: { type: String, required: true },
-    ownerId: { type: String, required: true },
-    transactionDate: { type: Date, default: Date.now }
+    itemId: { 
+        type: String, 
+        required: true, 
+        unique: true 
+    },
+    productId: { 
+        type: String, 
+        required: true 
+    },
+    createdAt: { 
+        type: Date, 
+        default: Date.now 
+    }
+});
+
+// Transaction Schema
+const transactionSchema = new mongoose.Schema({
+    transactionId: { 
+        type: String, 
+        required: true, 
+        unique: true 
+    },
+    itemId: { 
+        type: String, 
+        required: true 
+    },
+    ownerId: { 
+        type: String, 
+        required: true 
+    },
+    previousOwnerId: { 
+        type: String,
+        default: null  // null for initial creation
+    },
+    transactionDate: { 
+        type: Date, 
+        default: Date.now 
+    }
 });
 
 const User = mongoose.model('User', userSchema);
 const Product = mongoose.model('Product', productSchema);
+const Transaction = mongoose.model('Transaction', transactionSchema);
 
 // Generate unique user ID
 function generateUserId() {
     return crypto.randomBytes(16).toString('hex');
+}
+
+// Helper function to generate random IDs
+function generateId(prefix) {
+    return `${prefix}_${crypto.randomBytes(16).toString('hex')}`;
 }
 
 // Register user
@@ -132,32 +173,163 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-// Add product
+// Create new product
 app.post('/api/products', authenticateToken, async (req, res) => {
     try {
         const { productId } = req.body;
         const ownerId = req.user.userId;
 
+        // Generate a unique item ID
+        const itemId = generateId('item');
+        
+        // Create the product
         const product = new Product({
-            productId,
-            ownerId,
-            transactionDate: new Date()
+            itemId,
+            productId
         });
 
+        // Create initial transaction (minting)
+        const transaction = new Transaction({
+            transactionId: generateId('txn'),
+            itemId,
+            ownerId,
+            previousOwnerId: null  // Initial creation has no previous owner
+        });
+
+        // Save both documents
         await product.save();
-        res.status(201).json({ message: 'Product added successfully', product });
+        await transaction.save();
+
+        res.status(201).json({ 
+            message: 'Product created successfully', 
+            product,
+            transaction 
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Error adding product', error: error.message });
+        res.status(500).json({ 
+            message: 'Error creating product', 
+            error: error.message 
+        });
     }
 });
 
-// Get user's products
-app.get('/api/products', authenticateToken, async (req, res) => {
+// Transfer ownership of a product
+app.post('/api/products/transfer', authenticateToken, async (req, res) => {
     try {
-        const products = await Product.find({ ownerId: req.user.userId });
-        res.json(products);
+        const { itemId, newOwnerId } = req.body;
+        const currentOwnerId = req.user.userId;
+
+        // Find the most recent transaction for this item
+        const lastTransaction = await Transaction.findOne({ 
+            itemId 
+        }).sort({ transactionDate: -1 });
+
+        if (!lastTransaction) {
+            return res.status(404).json({ 
+                message: 'Product not found' 
+            });
+        }
+
+        // Verify current ownership
+        if (lastTransaction.ownerId !== currentOwnerId) {
+            return res.status(403).json({ 
+                message: 'You do not own this product' 
+            });
+        }
+
+        // Create new transaction
+        const transaction = new Transaction({
+            transactionId: generateId('txn'),
+            itemId,
+            ownerId: newOwnerId,
+            previousOwnerId: currentOwnerId
+        });
+
+        await transaction.save();
+
+        res.json({ 
+            message: 'Ownership transferred successfully', 
+            transaction 
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching products', error: error.message });
+        res.status(500).json({ 
+            message: 'Error transferring ownership', 
+            error: error.message 
+        });
+    }
+});
+
+// Get product ownership history
+app.get('/api/products/:itemId/history', authenticateToken, async (req, res) => {
+    try {
+        const { itemId } = req.params;
+
+        // Find the product
+        const product = await Product.findOne({ itemId });
+        if (!product) {
+            return res.status(404).json({ 
+                message: 'Product not found' 
+            });
+        }
+
+        // Get all transactions for this item
+        const transactions = await Transaction.find({ 
+            itemId 
+        }).sort({ transactionDate: 1 });
+
+        res.json({
+            product,
+            transactions
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            message: 'Error fetching product history', 
+            error: error.message 
+        });
+    }
+});
+
+// Get products owned by user
+app.get('/api/products/owned', authenticateToken, async (req, res) => {
+    try {
+        const ownerId = req.user.userId;
+
+        // Find the latest transaction for each item owned by the user
+        const latestTransactions = await Transaction.aggregate([
+            {
+                $sort: { 
+                    itemId: 1, 
+                    transactionDate: -1 
+                }
+            },
+            {
+                $group: {
+                    _id: '$itemId',
+                    lastTransaction: { $first: '$$ROOT' }
+                }
+            },
+            {
+                $match: {
+                    'lastTransaction.ownerId': ownerId
+                }
+            }
+        ]);
+
+        // Get the product details for each item
+        const itemIds = latestTransactions.map(t => t._id);
+        const products = await Product.find({
+            itemId: { $in: itemIds }
+        });
+
+        res.json({
+            products,
+            transactions: latestTransactions.map(t => t.lastTransaction)
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            message: 'Error fetching owned products', 
+            error: error.message 
+        });
     }
 });
 
