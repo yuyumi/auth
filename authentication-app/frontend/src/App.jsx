@@ -15,6 +15,12 @@ const App = () => {
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [productHistory, setProductHistory] = useState([]);
+  
+  // Admin state
+  const [pendingManufacturers, setPendingManufacturers] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
+  const [adminTransferProduct, setAdminTransferProduct] = useState(null);
+  const [showAdminTransfer, setShowAdminTransfer] = useState(false);
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -25,9 +31,186 @@ const App = () => {
     if (token && storedUserId) {
       setUserId(storedUserId);
       setUserType(storedUserType);
-      fetchOwnedProducts();
+      if (storedUserType === 'admin') {
+        fetchPendingManufacturers();
+        fetchAllProducts();
+      } else {
+        fetchOwnedProducts();
+      }
     }
   }, []);
+
+  const fetchPendingManufacturers = async () => {
+    try {
+      const response = await fetch(`${API_URL}/admin/pending-manufacturers`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setPendingManufacturers(data);
+      }
+    } catch (error) {
+      setMessage('Error fetching pending manufacturers');
+    }
+  };
+
+  const fetchAllProducts = async () => {
+    try {
+      const response = await fetch(`${API_URL}/admin/products`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAllProducts(data);
+      }
+    } catch (error) {
+      setMessage('Error fetching all products');
+    }
+  };
+
+  const handleManufacturerVerification = async (manufacturerId, approve) => {
+    try {
+      const response = await fetch(`${API_URL}/admin/verify-manufacturer/${manufacturerId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ approve })
+      });
+      
+      if (response.ok) {
+        setMessage(`Manufacturer ${approve ? 'approved' : 'rejected'}`);
+        fetchPendingManufacturers();
+      } else {
+        setMessage('Error processing verification');
+      }
+    } catch (error) {
+      setMessage('Error processing verification');
+    }
+  };
+
+  const handleAdminTransfer = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`${API_URL}/admin/transfer-product`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          itemId: adminTransferProduct.itemId,
+          newOwnerId: transferUserId
+        })
+      });
+      
+      if (response.ok) {
+        setMessage('Product transferred successfully');
+        setShowAdminTransfer(false);
+        setTransferUserId('');
+        setAdminTransferProduct(null);
+        fetchAllProducts();
+      } else {
+        const data = await response.json();
+        setMessage(data.message);
+      }
+    } catch (error) {
+      setMessage('Error transferring product');
+    }
+  };
+
+  // Admin Dashboard Component
+  const AdminDashboard = () => (
+    <div className="space-y-8">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-4">Pending Manufacturer Verifications</h2>
+        {pendingManufacturers.length > 0 ? (
+          <div className="space-y-4">
+            {pendingManufacturers.map((manufacturer) => (
+              <div key={manufacturer.userId} className="bg-gray-100 p-4 rounded">
+                <p><strong>Email:</strong> {manufacturer.email}</p>
+                <p><strong>User ID:</strong> {manufacturer.userId}</p>
+                <div className="mt-2 space-x-2">
+                  <button
+                    onClick={() => handleManufacturerVerification(manufacturer.userId, true)}
+                    className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleManufacturerVerification(manufacturer.userId, false)}
+                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p>No pending verifications</p>
+        )}
+      </div>
+
+      <div>
+        <h2 className="text-2xl font-bold mb-4">All Products</h2>
+        {allProducts.length > 0 ? (
+          <div className="space-y-4">
+            {allProducts.map((product) => (
+              <div key={product.itemId} className="bg-gray-100 p-4 rounded">
+                <p><strong>Product ID:</strong> {product.productId}</p>
+                <p><strong>Item ID:</strong> {product.itemId}</p>
+                <p><strong>Current Owner:</strong> {product.currentOwner}</p>
+                <div className="mt-2">
+                  <button
+                    onClick={() => {
+                      setAdminTransferProduct(product);
+                      setShowAdminTransfer(true);
+                      setShowHistory(false);
+                    }}
+                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                  >
+                    Transfer Ownership
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p>No products in the system</p>
+        )}
+      </div>
+
+      {showAdminTransfer && adminTransferProduct && (
+        <div className="mt-8">
+          <h3 className="text-xl font-bold mb-4">Transfer Product Ownership</h3>
+          <form onSubmit={handleAdminTransfer} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium">New Owner User ID</label>
+              <input
+                type="text"
+                value={transferUserId}
+                onChange={(e) => setTransferUserId(e.target.value)}
+                className="mt-1 block w-full rounded-md border border-gray-300 p-2"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
+            >
+              Transfer Product
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
 
   const fetchOwnedProducts = async () => {
     try {
@@ -244,107 +427,113 @@ const App = () => {
               </p>
             </div>
             
-            {userType === 'manufacturer' && (
-              <>
-                <h2 className="text-2xl font-bold mb-4">Create New Product</h2>
-                <form onSubmit={handleAddProduct} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium">Product ID</label>
-                    <input
-                      type="text"
-                      value={productId}
-                      onChange={(e) => setProductId(e.target.value)}
-                      className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-                      required
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
-                  >
-                    Create Product
-                  </button>
-                </form>
-              </>
-            )}
-            
-            <div className="mt-8">
-              <h2 className="text-2xl font-bold mb-4">Your Products</h2>
-              {products.length > 0 ? (
-                <div className="space-y-4">
-                  {products.map((product) => (
-                    <div key={product.itemId} className="bg-gray-100 p-4 rounded">
-                      <p><strong>Product ID:</strong> {product.productId}</p>
-                      <p><strong>Item ID:</strong> {product.itemId}</p>
-                      <div className="mt-2 space-x-2">
-                        <button
-                          onClick={() => {
-                            setSelectedProduct(product);
-                            setShowTransferForm(true);
-                            setShowHistory(false);
-                          }}
-                          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-                        >
-                          Transfer
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedProduct(product);
-                            fetchProductHistory(product.itemId);
-                            setShowTransferForm(false);
-                          }}
-                          className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                        >
-                          View History
-                        </button>
+            {userType === 'admin' ? (
+              <AdminDashboard />
+            ) : (
+              <div>
+                {userType === 'manufacturer' && (
+                  <>
+                    <h2 className="text-2xl font-bold mb-4">Create New Product</h2>
+                    <form onSubmit={handleAddProduct} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium">Product ID</label>
+                        <input
+                          type="text"
+                          value={productId}
+                          onChange={(e) => setProductId(e.target.value)}
+                          className="mt-1 block w-full rounded-md border border-gray-300 p-2"
+                          required
+                        />
                       </div>
+                      <button
+                        type="submit"
+                        className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
+                      >
+                        Create Product
+                      </button>
+                    </form>
+                  </>
+                )}
+                
+                <div className="mt-8">
+                  <h2 className="text-2xl font-bold mb-4">Your Products</h2>
+                  {products.length > 0 ? (
+                    <div className="space-y-4">
+                      {products.map((product) => (
+                        <div key={product.itemId} className="bg-gray-100 p-4 rounded">
+                          <p><strong>Product ID:</strong> {product.productId}</p>
+                          <p><strong>Item ID:</strong> {product.itemId}</p>
+                          <div className="mt-2 space-x-2">
+                            <button
+                              onClick={() => {
+                                setSelectedProduct(product);
+                                setShowTransferForm(true);
+                                setShowHistory(false);
+                              }}
+                              className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                            >
+                              Transfer
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedProduct(product);
+                                fetchProductHistory(product.itemId);
+                                setShowTransferForm(false);
+                              }}
+                              className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                            >
+                              View History
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  ) : (
+                    <p>No products owned yet</p>
+                  )}
                 </div>
-              ) : (
-                <p>No products owned yet</p>
-              )}
-            </div>
-
-            {showTransferForm && selectedProduct && (
-              <div className="mt-8">
-                <h3 className="text-xl font-bold mb-4">Transfer Product</h3>
-                <form onSubmit={handleTransfer} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium">New Owner User ID</label>
-                    <input
-                      type="text"
-                      value={transferUserId}
-                      onChange={(e) => setTransferUserId(e.target.value)}
-                      className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-                      required
-                    />
+  
+                {showTransferForm && selectedProduct && (
+                  <div className="mt-8">
+                    <h3 className="text-xl font-bold mb-4">Transfer Product</h3>
+                    <form onSubmit={handleTransfer} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium">New Owner User ID</label>
+                        <input
+                          type="text"
+                          value={transferUserId}
+                          onChange={(e) => setTransferUserId(e.target.value)}
+                          className="mt-1 block w-full rounded-md border border-gray-300 p-2"
+                          required
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
+                      >
+                        Transfer Product
+                      </button>
+                    </form>
                   </div>
-                  <button
-                    type="submit"
-                    className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
-                  >
-                    Transfer Product
-                  </button>
-                </form>
-              </div>
-            )}
-
-            {showHistory && selectedProduct && (
-              <div className="mt-8">
-                <h3 className="text-xl font-bold mb-4">Product History</h3>
-                <div className="space-y-2">
-                  {productHistory.map((transaction) => (
-                    <div key={transaction.transactionId} className="bg-gray-100 p-3 rounded">
-                      <p><strong>Transaction ID:</strong> {transaction.transactionId}</p>
-                      <p><strong>Owner ID:</strong> {transaction.ownerId}</p>
-                      {transaction.previousOwnerId && (
-                        <p><strong>Previous Owner:</strong> {transaction.previousOwnerId}</p>
-                      )}
-                      <p><strong>Date:</strong> {new Date(transaction.transactionDate).toLocaleString()}</p>
+                )}
+  
+                {showHistory && selectedProduct && (
+                  <div className="mt-8">
+                    <h3 className="text-xl font-bold mb-4">Product History</h3>
+                    <div className="space-y-2">
+                      {productHistory.map((transaction) => (
+                        <div key={transaction.transactionId} className="bg-gray-100 p-3 rounded">
+                          <p><strong>Transaction ID:</strong> {transaction.transactionId}</p>
+                          <p><strong>Owner ID:</strong> {transaction.ownerId}</p>
+                          {transaction.previousOwnerId && (
+                            <p><strong>Previous Owner:</strong> {transaction.previousOwnerId}</p>
+                          )}
+                          <p><strong>Date:</strong> {new Date(transaction.transactionDate).toLocaleString()}</p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
             )}
             
@@ -360,5 +549,4 @@ const App = () => {
     </div>
   );
 };
-
 export default App;
