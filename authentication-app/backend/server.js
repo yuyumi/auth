@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const path = require('path');
-const { sendManufacturerVerificationEmail } = require('./emailService');
+const { sendManufacturerVerificationEmail } = require('./email_service');
 
 const app = express();
 app.use(express.json());
