@@ -254,6 +254,24 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+// Middleware to verify JWT
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ message: 'Invalid token' });
+        }
+        req.user = user;
+        next();
+    });
+};
+
 // Admin endpoint to verify manufacturer accounts
 app.post('/api/admin/verify-manufacturer/:userId', authenticateToken, checkAdmin, async (req, res) => {
     try {
@@ -299,24 +317,6 @@ app.get('/api/admin/pending-manufacturers', authenticateToken, checkAdmin, async
       res.status(500).json({ message: 'Error fetching pending manufacturers' });
     }
   });
-
-// Middleware to verify JWT
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-
-    if (!token) {
-        return res.status(401).json({ message: 'Authentication required' });
-    }
-
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) {
-            return res.status(403).json({ message: 'Invalid token' });
-        }
-        req.user = user;
-        next();
-    });
-};
 
 // Modified create product endpoint to require manufacturer account
 app.post('/api/products', authenticateToken, checkManufacturer, async (req, res) => {
