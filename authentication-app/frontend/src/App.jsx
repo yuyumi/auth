@@ -462,11 +462,9 @@ const App = () => {
                         <div className="bg-white p-4 rounded-lg shadow-sm">
                           <QRGenerator
                             data={JSON.stringify({
-                              itemId: newProduct.itemId,
-                              productId: newProduct.productId,
-                              type: 'product-verification'
+                              itemId: newProduct.itemId
                             })}
-                            size={256}
+                            size={64}
                           />
                         </div>
                         <button
