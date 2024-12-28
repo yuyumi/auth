@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import QRCodeDisplay from './QRCodeDisplay';
 
 const App = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -15,6 +16,7 @@ const App = () => {
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [productHistory, setProductHistory] = useState([]);
+  const [newProduct, setNewProduct] = useState(null);
   
   // Admin state
   const [pendingManufacturers, setPendingManufacturers] = useState([]);
@@ -299,6 +301,7 @@ const App = () => {
       
       if (response.ok) {
         setMessage('Product created successfully');
+        setNewProduct(data.product); // Store the newly created product
         setProductId('');
         fetchOwnedProducts();
       } else {
@@ -452,9 +455,30 @@ const App = () => {
                         Create Product
                       </button>
                     </form>
+                    
+                    {newProduct && (
+                      <div className="mt-6">
+                        <h3 className="text-xl font-bold mb-2">Product Created Successfully</h3>
+                        <div className="bg-white p-4 rounded-lg shadow-sm">
+                          <QRCodeDisplay
+                            data={JSON.stringify({
+                              itemId: newProduct.itemId,
+                              productId: newProduct.productId,
+                              type: 'product-verification'
+                            })}
+                            size={256}
+                          />
+                        </div>
+                        <button
+                          onClick={() => setNewProduct(null)}
+                          className="mt-4 w-full bg-gray-500 text-white p-2 rounded-md hover:bg-gray-600"
+                        >
+                          Create Another Product
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
-                
                 <div className="mt-8">
                   <h2 className="text-2xl font-bold mb-4">Your Products</h2>
                   {products.length > 0 ? (
