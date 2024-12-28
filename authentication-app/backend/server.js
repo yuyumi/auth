@@ -147,6 +147,10 @@ function generateId(prefix) {
     return `${prefix}_${crypto.randomBytes(16).toString('hex')}`;
 }
 
+function generateItemId() {
+    return crypto.randomBytes(8).toString('hex');
+}
+
 // Modified register endpoint with manufacturer verification
 app.post('/api/register', async (req, res) => {
     try {
@@ -324,7 +328,7 @@ app.post('/api/products', authenticateToken, checkManufacturer, async (req, res)
         const { productId } = req.body;
         const ownerId = req.user.userId;
 
-        const itemId = generateId('item');
+        const itemId = generateItemId();
         
         const product = new Product({
             itemId,

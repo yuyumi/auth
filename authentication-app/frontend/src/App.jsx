@@ -461,9 +461,8 @@ const App = () => {
                         <h3 className="text-xl font-bold mb-2">Product Created Successfully</h3>
                         <div className="bg-white p-4 rounded-lg shadow-sm">
                           <QRGenerator
-                            data={JSON.stringify({
-                              itemId: newProduct.itemId
-                            })}
+                            data={ newProduct.itemId
+                            }
                             size={64}
                           />
                         </div>

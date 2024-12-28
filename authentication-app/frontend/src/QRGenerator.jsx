@@ -9,11 +9,16 @@ const QRGenerator = ({ data, size = 256, border = 4 }) => {
     const ctx = canvas.getContext('2d');
 
     try {
+      function hexToBytes(hex) {
+        return Object.freeze(
+          hex.match(/.{1,2}/g)?.map(byte => parseInt(byte, 16)) || []
+        );
+      }
       // Convert data to string if it's an object
-      const text = typeof data === 'string' ? data : JSON.stringify(data);
+      const text = hexToBytes(data.itemId);
 
       // Generate QR Code using the correct import
-      const qr = qrcodegen.QrCode.encodeText(text, qrcodegen.QrCode.Ecc.HIGH);
+      const qr = qrcodegen.QrCode.encodeBinary(text, qrcodegen.QrCode.Ecc.HIGH);
       
       // Calculate scaling factor
       const moduleCount = qr.size;
