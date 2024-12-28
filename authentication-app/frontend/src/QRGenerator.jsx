@@ -9,10 +9,10 @@ const QRGenerator = ({ data, size = 256, border = 4 }) => {
     const ctx = canvas.getContext('2d');
 
     try {
-      const number = parseInt(data.itemId, 16);
+      const text = data.itemId;
 
       // Generate QR Code using the correct import
-      const qr = qrcodegen.QrCode.encodeText(number, qrcodegen.QrCode.Ecc.HIGH);
+      const qr = qrcodegen.QrCode.encodeText(text, qrcodegen.QrCode.Ecc.HIGH);
       
       // Calculate scaling factor
       const moduleCount = qr.size;
