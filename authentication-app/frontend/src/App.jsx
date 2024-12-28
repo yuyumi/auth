@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import QRCodeDisplay from './QRCodeDisplay';
+import QRGenerator from './QRGenerator';
 
 const App = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -460,7 +460,7 @@ const App = () => {
                       <div className="mt-6">
                         <h3 className="text-xl font-bold mb-2">Product Created Successfully</h3>
                         <div className="bg-white p-4 rounded-lg shadow-sm">
-                          <QRCodeDisplay
+                          <QRGenerator
                             data={JSON.stringify({
                               itemId: newProduct.itemId,
                               productId: newProduct.productId,

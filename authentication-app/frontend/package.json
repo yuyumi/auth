@@ -10,6 +10,7 @@
     "serve": "vite preview --host"
   },
   "dependencies": {
+    "nayuki-qr-code-generator": "^1.8.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
