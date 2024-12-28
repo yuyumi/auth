@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { QrCode } from 'nayuki-qr-code-generator';
+import qrcodegen from 'nayuki-qr-code-generator';
 
 const QRGenerator = ({ data, size = 256, border = 4 }) => {
   const canvasRef = useRef(null);
@@ -12,8 +12,8 @@ const QRGenerator = ({ data, size = 256, border = 4 }) => {
       // Convert data to string if it's an object
       const text = typeof data === 'string' ? data : JSON.stringify(data);
 
-      // Generate QR Code
-      const qr = QrCode.encodeText(text, QrCode.Ecc.HIGH);
+      // Generate QR Code using the correct import
+      const qr = qrcodegen.QrCode.encodeText(text, qrcodegen.QrCode.Ecc.HIGH);
       
       // Calculate scaling factor
       const moduleCount = qr.size;
@@ -75,8 +75,7 @@ const QRGenerator = ({ data, size = 256, border = 4 }) => {
         style={{ 
           width: size,
           height: size,
-          maxWidth: '100%',
-          height: 'auto'
+          maxWidth: '100%'
         }}
       />
       <button
