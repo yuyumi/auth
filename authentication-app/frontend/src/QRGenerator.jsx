@@ -9,7 +9,7 @@ const QRGenerator = ({ data, size = 256, border = 4 }) => {
     const ctx = canvas.getContext('2d');
 
     try {
-      const number = data.itemId;
+      const number = parseInt(data.itemId, 16);
 
       // Generate QR Code using the correct import
       const qr = qrcodegen.QrCode.encodeText(number, qrcodegen.QrCode.Ecc.HIGH);
