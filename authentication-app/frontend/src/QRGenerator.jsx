@@ -9,8 +9,7 @@ const QRGenerator = ({ data, size = 256, border = 4 }) => {
     const ctx = canvas.getContext('2d');
 
     try {
-      const number = parseInt(data.itemId, 16);
-      Uint8Array.fromHex(number);
+      const number = parseInt(data.itemId);
 
       // Generate QR Code using the correct import
       const qr = qrcodegen.QrCode.encodeBinary(number, qrcodegen.QrCode.Ecc.HIGH);
