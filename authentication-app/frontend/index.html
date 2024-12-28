@@ -1,10 +1,20 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
+    <title>Authentication App</title>
+    <!-- Add Nayuki's QR Code library -->
+    <script>
+      // Create a custom event to notify when the library is loaded
+      function onQrCodeLoaded() {
+        window.dispatchEvent(new Event('QrCodeLoaded'));
+      }
+    </script>
+    <script 
+      src="https://cdn.jsdelivr.net/npm/nayuki-qr-code-generator@1.8.0/index.min.js" 
+      onload="onQrCodeLoaded()"
+    ></script>
   </head>
   <body>
     <div id="root"></div>
