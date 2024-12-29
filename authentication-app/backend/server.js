@@ -148,7 +148,7 @@ function generateId(prefix) {
 }
 
 function generateItemId() {
-    return crypto.randomBytes(9).toString('base64');
+    return crypto.randomBytes(9).toString('base64url');
 }
 
 // Modified register endpoint with manufacturer verification
