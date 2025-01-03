@@ -10,6 +10,7 @@
     "serve": "vite preview --host"
   },
   "dependencies": {
+    "lucide-react": "^0.469.0",
     "nayuki-qr-code-generator": "^1.8.0",
     "qr-scanner": "^1.4.2",
     "react": "^18.2.0",
