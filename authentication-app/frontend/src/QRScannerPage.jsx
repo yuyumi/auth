@@ -21,12 +21,7 @@ const QRScannerPage = () => {
         videoRef.current,
         result => {
           try {
-            const data = JSON.parse(result.data);
-            if (data.itemId) {
-              handleSuccessfulScan(data);
-            } else {
-              setError('Invalid QR code format');
-            }
+            const data = result.data;
           } catch (e) {
             setError('Invalid QR code format');
           }
@@ -49,7 +44,7 @@ const QRScannerPage = () => {
 
   const handleSuccessfulScan = async (data) => {
     try {
-      const response = await fetch(`${API_URL}/products/${data.itemId}`);
+      const response = await fetch(`${API_URL}/products/${data}`);
       if (response.ok) {
         const productData = await response.json();
         setScannedResult(productData);
