@@ -21,7 +21,7 @@ const QRScannerPage = () => {
         videoRef.current,
         result => {
           try {
-            const data = result.data;
+            handleSuccessfulScan(result.data);
           } catch (e) {
             setError('Invalid QR code format');
           }
