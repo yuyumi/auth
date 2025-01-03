@@ -550,6 +550,24 @@ app.get('/api/admin/products', authenticateToken, checkAdmin, async (req, res) =
     }
 });
 
+// public access point
+app.get('/api/products/:itemId/public', async (req, res) => {
+    try {
+        const { itemId } = req.params;
+        const product = await Product.findOne({ itemId });
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+        const latestTransaction = await Transaction.findOne({ itemId }).sort({ transactionDate: -1 });
+        res.json({
+            product,
+            currentOwner: latestTransaction?.ownerId
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching product' });
+    }
+});
+
 // Health check endpoint for Railway
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'healthy' });
