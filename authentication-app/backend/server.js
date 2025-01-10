@@ -147,6 +147,10 @@ function generateId(prefix) {
     return `${prefix}_${crypto.randomBytes(16).toString('hex')}`;
 }
 
+function generateItemId() {
+    return crypto.randomBytes(9).toString('base64url');
+}
+
 // Modified register endpoint with manufacturer verification
 app.post('/api/register', async (req, res) => {
     try {
@@ -324,7 +328,7 @@ app.post('/api/products', authenticateToken, checkManufacturer, async (req, res)
         const { productId } = req.body;
         const ownerId = req.user.userId;
 
-        const itemId = generateId('item');
+        const itemId = generateItemId();
         
         const product = new Product({
             itemId,
@@ -543,6 +547,24 @@ app.get('/api/admin/products', authenticateToken, checkAdmin, async (req, res) =
             message: 'Error fetching products', 
             error: error.message 
         });
+    }
+});
+
+// public access point
+app.get('/api/products/:itemId/public', async (req, res) => {
+    try {
+        const { itemId } = req.params;
+        const product = await Product.findOne({ itemId });
+        if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+        const latestTransaction = await Transaction.findOne({ itemId }).sort({ transactionDate: -1 });
+        res.json({
+            product,
+            currentOwner: latestTransaction?.ownerId
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching product' });
     }
 });
 

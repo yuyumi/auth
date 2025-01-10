@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import QRGenerator from './QRGenerator';
+import QRScannerPage from './QRScannerPage';
 
-const App = () => {
+const MainApp = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,6 +18,7 @@ const App = () => {
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [productHistory, setProductHistory] = useState([]);
+  const [newProduct, setNewProduct] = useState(null);
   
   // Admin state
   const [pendingManufacturers, setPendingManufacturers] = useState([]);
@@ -299,6 +303,7 @@ const App = () => {
       
       if (response.ok) {
         setMessage('Product created successfully');
+        setNewProduct(data.product); // Store the newly created product
         setProductId('');
         fetchOwnedProducts();
       } else {
@@ -356,6 +361,12 @@ const App = () => {
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
+        <div className="mb-4 text-center">
+          <Link to="/scan" className="text-blue-500 hover:text-blue-600">
+            Open QR Scanner
+          </Link>
+        </div>
+        
         {message && (
           <div className="mb-4 p-4 rounded bg-blue-100 text-blue-700">
             {message}
@@ -452,9 +463,27 @@ const App = () => {
                         Create Product
                       </button>
                     </form>
+                    
+                    {newProduct && (
+                      <div className="mt-6">
+                        <h3 className="text-xl font-bold mb-2">Product Created Successfully</h3>
+                        <div className="bg-white p-4 rounded-lg shadow-sm">
+                          <QRGenerator
+                            data={ {itemId : newProduct.itemId} }
+                            size={64}
+                          />
+                        </div>
+                        <button
+                          onClick={() => setNewProduct(null)}
+                          className="mt-4 w-full bg-gray-500 text-white p-2 rounded-md hover:bg-gray-600"
+                        >
+                          Create Another Product
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
-                
+
                 <div className="mt-8">
                   <h2 className="text-2xl font-bold mb-4">Your Products</h2>
                   {products.length > 0 ? (
@@ -492,7 +521,7 @@ const App = () => {
                     <p>No products owned yet</p>
                   )}
                 </div>
-  
+
                 {showTransferForm && selectedProduct && (
                   <div className="mt-8">
                     <h3 className="text-xl font-bold mb-4">Transfer Product</h3>
@@ -516,7 +545,7 @@ const App = () => {
                     </form>
                   </div>
                 )}
-  
+
                 {showHistory && selectedProduct && (
                   <div className="mt-8">
                     <h3 className="text-xl font-bold mb-4">Product History</h3>
@@ -547,6 +576,16 @@ const App = () => {
         )}
       </div>
     </div>
+  );
+};
+const App = () => {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/scan" element={<QRScannerPage />} />
+        <Route path="/" element={<MainApp />} />
+      </Routes>
+    </Router>
   );
 };
 export default App;
